@@ -1,2 +1,2 @@
-# linunx-workspaces
+# linux-workspaces
 Tools to manage Linux user accounts as isolated workspaces
