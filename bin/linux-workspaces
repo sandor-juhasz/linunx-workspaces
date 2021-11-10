@@ -1,0 +1,103 @@
+#!/bin/bash
+###############################################################################
+# Manages isolated workspaces in Ubuntu.
+#
+# A workspace is an isolated working area which has its own Linux user account
+# and can be configured with various initialization settings.
+#
+# The workspace can be created using the following command as root:
+# `linux-workspaces create <name>`
+# The command will create a Linux user called `workspace-<name>` with the 
+# default password `welcome`.
+#
+# After the fist login the workspace initialization
+# procedure will start in a terminal window. Later it can be started with the
+# `linux-workspaces init` command and it will re-run the initialization for the
+# current account.
+#
+# Workspaces can be deleted with the command `linux-workspaces delete <name>`
+# as root. This command will remove the user and deletes the home directory as
+# well. Please be careful when using this command.
+###############################################################################
+
+create() {
+    shift 1
+
+    local user="workspace-$1"
+    local group="developer"
+
+    if [[ -e "/home/${user}" ]]; then
+        echo "Error: user ${user} already exists."
+        return 1
+    fi
+
+    useradd --gid "${group}" \
+        --groups adm,cdrom,sudo,dip,plugdev,lpadmin,lxd,sambashare,docker,vboxsf \
+        --create-home \
+        --password "$(echo "welcome" | openssl passwd -1 -stdin)" \
+        --shell /usr/bin/bash \
+        "${user}"
+
+    install -o "${user}" -g "${group}" -d "/home/${user}/.config"
+    install -o "${user}" -g "${group}" -d "/home/${user}/.config/autostart"
+    install -o "${user}" -g "${group}" /usr/local/share/linux-workspaces/init-workspace.desktop  "/home/${user}/.config/autostart"
+}
+
+#
+# - The init script groups are placed under  /usr/local/share/linux-workspaces/init.
+# - Init scripts are placed inside the groups.
+# - The "all" group is executed for every workgroup.
+#
+initialize() {
+    local init_home="/usr/local/share/linux-workspaces/init"
+
+    echo "Initializing workspace ${USER}"
+    shift 1
+    for cmd in all "$@"; do
+        if [[ -d "${init_home}/${cmd}" ]]; then
+            echo "Processing initialization scripts under \"${cmd}\"..."
+            for cmd_file in "${init_home}"/"${cmd}"/*.sh ; do
+                echo "   Executing $(basename ${cmd_file})"
+                ${cmd_file}
+                # TODO: check if execution was successful.
+            done
+        else 
+            echo "Warning: ${cmd} init folder was not found."
+        fi
+    done
+    echo "Cleanup..."
+    # TODO: clean up only when the initialization was successful.
+    if [[ -e "${HOME}/.config/autostart/init-workspace.desktop" ]]; then
+        echo "Deleting init-workspace.desktop"
+        rm ~/.config/autostart/init-workspace.desktop
+    fi
+    read -r -p "Press ENTER to close this window."
+}
+
+delete() {
+    shift 1
+    local user="workspace-$1"
+    echo "Deleting workspace: ${user}"
+    deluser "${user}"
+    rm -r "/home/${user:?nonexistent}"
+}
+
+help() {
+    echo "Usage: TODO"
+}
+
+command=$1
+case $command in
+"create")
+    create "$@"
+    ;;
+"init")
+    initialize "$@"
+    ;;
+"delete")
+    delete "$@"
+    ;;
+*)
+    help
+    ;;
+esac

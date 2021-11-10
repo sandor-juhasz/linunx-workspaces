@@ -1,0 +1,8 @@
+This folder contains all the initialization scripts that need to be executed
+for all workspaces.
+
+The initialization scripts are standard Linux shell scripts. They should 
+follow the naming convention of "##_scriptname.sh" where the ## is a 
+number with leading zero if applicable. The initialization scripts are
+executed in ascending order. If a script fails, the execution of subsequent
+script is suspended.

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Name=Initialize Workspace        
+Comment=Initializes the current workspace by installing dotfiles and other tools.
+Exec=bash -c 'linux-workspaces init'
+Icon=utilities-terminal
+Terminal=true 
+Type=Application
+Categories=Application;
